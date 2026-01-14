@@ -9,6 +9,10 @@ const AIChat: React.FC = () => {
   const { t, language } = useLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   
+  // MODIFICATION 1 : On crée une référence pour le CONTENEUR (la boîte qui scrolle)
+  // au lieu de l'élément final.
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setMessages([
       {
@@ -21,10 +25,17 @@ const AIChat: React.FC = () => {
 
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // MODIFICATION 2 : Cette fonction ne force plus la page à bouger.
+  // Elle ajuste juste la position de l'ascenseur du chat.
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      const { scrollHeight, clientHeight } = chatContainerRef.current;
+      chatContainerRef.current.scrollTo({
+        top: scrollHeight - clientHeight,
+        behavior: 'smooth'
+      });
+    }
   };
 
   useEffect(() => {
@@ -116,8 +127,11 @@ const AIChat: React.FC = () => {
               </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-white/10">
+            {/* MODIFICATION 3 : On attache la ref ici, sur le conteneur scrollable */}
+            <div 
+              ref={chatContainerRef}
+              className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-white/10"
+            >
               <AnimatePresence>
                 {messages.map((msg, index) => (
                   <motion.div
@@ -157,7 +171,7 @@ const AIChat: React.FC = () => {
                   <span className="animate-pulse">{t.aiChat.processing}</span>
                 </motion.div>
               )}
-              <div ref={messagesEndRef} />
+              {/* On a supprimé la div vide "messagesEndRef" qui était ici */}
             </div>
 
             {/* Input */}
