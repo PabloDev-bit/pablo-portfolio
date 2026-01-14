@@ -2,14 +2,13 @@ import { GoogleGenAI } from "@google/genai";
 import { PERSONAL_INFO_STATIC, SKILLS } from "../constants";
 import { translations, Language } from "../translations";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// MODIFICATION ICI : On enlève l'initialisation globale qui faisait planter le site
+// const ai = new GoogleGenAI({ apiKey: process.env.API_KEY }); 
 
 const generateSystemInstruction = (lang: Language) => {
   const t = translations[lang];
-  // Use the translated bio and details for context
   const projects = t.projects.items.map(p => p.title + ": " + p.description).join('\n- ');
   
-  // Specific education block for the AI context
   const education = `
     - IPSSI (Bordeaux): Master Data & Intelligence Artificielle [2026-2028] (Upcoming/Next Step).
     - Cégep de Sherbrooke (Quebec): Techniques de l'informatique (Computer Science) [2024-2026].
@@ -41,8 +40,19 @@ const generateSystemInstruction = (lang: Language) => {
 
 export const sendMessageToGemini = async (userMessage: string, lang: Language): Promise<string> => {
   try {
+    // MODIFICATION ICI : On initialise l'IA seulement maintenant
+    // On vérifie les deux noms possibles définis dans vite.config.ts
+    const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      console.error("ERREUR CRITIQUE: Clé API manquante dans les variables d'environnement.");
+      return "Erreur de configuration : Clé API introuvable. Veuillez vérifier le fichier .env.local";
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash', // J'ai corrigé le nom du modèle (3-flash n'existe pas encore publiquement)
       contents: userMessage,
       config: {
         systemInstruction: generateSystemInstruction(lang),
@@ -53,7 +63,7 @@ export const sendMessageToGemini = async (userMessage: string, lang: Language): 
   } catch (error) {
     console.error("Gemini API Error:", error);
     return lang === 'fr' 
-      ? "Je suis actuellement hors ligne pour maintenance. Veuillez utiliser le formulaire de contact." 
-      : "I am currently offline due to maintenance. Please use the contact form.";
+      ? "Je suis actuellement hors ligne pour maintenance." 
+      : "I am currently offline due to maintenance.";
   }
 };
