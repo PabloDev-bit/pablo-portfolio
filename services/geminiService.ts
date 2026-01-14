@@ -1,9 +1,6 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { PERSONAL_INFO_STATIC, SKILLS } from "../constants";
 import { translations, Language } from "../translations";
-
-// MODIFICATION ICI : On enlève l'initialisation globale qui faisait planter le site
-// const ai = new GoogleGenAI({ apiKey: process.env.API_KEY }); 
 
 const generateSystemInstruction = (lang: Language) => {
   const t = translations[lang];
@@ -40,30 +37,27 @@ const generateSystemInstruction = (lang: Language) => {
 
 export const sendMessageToGemini = async (userMessage: string, lang: Language): Promise<string> => {
   try {
-    // MODIFICATION ICI : On initialise l'IA seulement maintenant
-    // On vérifie les deux noms possibles définis dans vite.config.ts
     const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("Clé API manquante");
 
-    if (!apiKey) {
-      console.error("ERREUR CRITIQUE: Clé API manquante dans les variables d'environnement.");
-      return "Erreur de configuration : Clé API introuvable. Veuillez vérifier le fichier .env.local";
-    }
-
-    const ai = new GoogleGenAI({ apiKey });
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash', // J'ai corrigé le nom du modèle (3-flash n'existe pas encore publiquement)
-      contents: userMessage,
-      config: {
-        systemInstruction: generateSystemInstruction(lang),
-      },
+    // Initialisation avec la nouvelle librairie standard
+    const genAI = new GoogleGenerativeAI(apiKey);
+    
+    // On récupère le modèle spécifique
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      systemInstruction: generateSystemInstruction(lang)
     });
 
-    return response.text || (lang === 'fr' ? "Je ne peux pas répondre pour le moment." : "I cannot answer at the moment.");
+    const result = await model.generateContent(userMessage);
+    const response = await result.response;
+    
+    return response.text();
+
   } catch (error) {
-    console.error("Gemini API Error:", error);
+    console.error("ERREUR GEMINI:", error);
     return lang === 'fr' 
-      ? "Je suis actuellement hors ligne pour maintenance." 
-      : "I am currently offline due to maintenance.";
+      ? "Je rencontre une erreur technique momentanée." 
+      : "I am encountering a temporary technical error.";
   }
 };
