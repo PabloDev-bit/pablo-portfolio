@@ -1,150 +1,139 @@
-import React, { useState, useEffect } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Language } from '../translations';
 
-const Header: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const { language, setLanguage, t } = useLanguage();
+export default function Header() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const { t, language, setLanguage } = useLanguage();
+  
+  const { scrollY } = useScroll();
+  const headerOpacity = useTransform(scrollY, [0, 100], [0.6, 0.95]);
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      setIsScrolled(window.scrollY > 50);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navLinks = [
-    { name: t.nav.about, href: '#about' },
-    { name: t.nav.skills, href: '#skills' },
-    { name: t.nav.projects, href: '#projects' },
-    { name: t.nav.aiChat, href: '#ai-chat' },
-  ];
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+      setIsMenuOpen(false);
+    }
+  };
 
-  const languages: { code: Language; label: string }[] = [
-    { code: 'fr', label: 'FR' },
-    { code: 'en', label: 'EN' },
-    { code: 'es', label: 'ES' },
+  const navItems = [
+    { key: 'nav.about', id: 'about' },
+    { key: 'nav.skills', id: 'skills' },
+    { key: 'nav.projects', id: 'projects' },
+    { key: 'nav.contact', id: 'contact' },
   ];
 
   return (
-    <>
-      {/* Desktop Floating Navigation */}
-      <div className="fixed top-6 left-0 right-0 z-50 hidden md:flex justify-center pointer-events-none">
-        <motion.nav 
-          initial={{ y: -100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="pointer-events-auto bg-surface/70 backdrop-blur-xl border border-white/10 px-2 py-2 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.2)] flex items-center space-x-1"
-        >
-          <div className="px-4 py-2 font-display font-bold text-white tracking-tight">
-            Pablo<span className="text-accent">.dev</span>
-          </div>
-
-          <div className="w-px h-6 bg-white/10 mx-2"></div>
-
-          <div className="flex items-center space-x-1">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                className="relative px-4 py-2 rounded-full text-sm font-medium text-slate-400 hover:text-white transition-colors duration-300 group overflow-hidden"
-              >
-                <span className="relative z-10">{link.name}</span>
-                <span className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 rounded-full transition-opacity duration-300"></span>
-              </a>
-            ))}
-          </div>
-
-          <div className="w-px h-6 bg-white/10 mx-2"></div>
-          
-          <div className="flex items-center space-x-1 pr-1">
-            {languages.map((lang) => (
-              <button
-                key={lang.code}
-                onClick={() => setLanguage(lang.code)}
-                className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all duration-300 ${
-                  language === lang.code 
-                    ? 'bg-white/10 text-white shadow-inner' 
-                    : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                }`}
-              >
-                {lang.label}
-              </button>
-            ))}
-          </div>
-
-          <a 
-            href="#contact" 
-            className="ml-2 bg-white text-black hover:bg-slate-200 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300"
+    <motion.header
+      style={{ opacity: headerOpacity }}
+      className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+        isScrolled ? 'glass-panel shadow-lg' : 'bg-transparent'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center py-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-2xl font-display font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"
           >
-            {t.nav.contact}
-          </a>
-        </motion.nav>
-      </div>
+            Pablo.dev
+          </motion.div>
 
-      {/* Mobile Navigation */}
-      <div className="md:hidden fixed top-0 left-0 w-full z-50 bg-background/80 backdrop-blur-lg border-b border-white/5">
-        <div className="flex items-center justify-between px-6 py-4">
-          <span className="font-display font-bold text-xl text-white">Pablo<span className="text-accent">.dev</span></span>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-white p-1"
-            >
-              {isOpen ? <X /> : <Menu />}
-            </button>
-          </div>
+          <nav className="hidden md:flex items-center space-x-8">
+            {navItems.map((item, index) => (
+              <motion.button
+                key={item.id}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                onClick={() => scrollToSection(item.id)}
+                className="text-gray-300 hover:text-primary transition-colors duration-200 font-medium"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {t(item.key)}
+              </motion.button>
+            ))}
+            
+            <div className="flex items-center space-x-2 ml-4">
+              {(['FR', 'EN', 'ES'] as const).map((lang) => (
+                <motion.button
+                  key={lang}
+                  onClick={() => setLanguage(lang)}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                    language === lang
+                      ? 'bg-primary text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-surface'
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {lang}
+                </motion.button>
+              ))}
+            </div>
+          </nav>
+
+          <motion.button
+            className="md:hidden text-gray-300 hover:text-primary transition-colors"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            whileTap={{ scale: 0.9 }}
+          >
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </motion.button>
         </div>
       </div>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: '100vh' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="fixed inset-0 z-40 bg-background pt-24 px-6 md:hidden flex flex-col"
-          >
-            <div className="space-y-6">
-              {navLinks.map((link, idx) => (
-                <motion.a
-                  key={link.name}
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: idx * 0.1 }}
-                  href={link.href}
-                  onClick={() => setIsOpen(false)}
-                  className="block text-3xl font-display font-medium text-white"
+      {isMenuOpen && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.3 }}
+          className="md:hidden glass-panel"
+        >
+          <div className="px-4 pt-2 pb-4 space-y-3">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => scrollToSection(item.id)}
+                className="block w-full text-left px-3 py-2 text-gray-300 hover:text-primary hover:bg-surface rounded-lg transition-all"
+              >
+                {t(item.key)}
+              </button>
+            ))}
+            
+            <div className="flex space-x-2 pt-2">
+              {(['FR', 'EN', 'ES'] as const).map((lang) => (
+                <button
+                  key={lang}
+                  onClick={() => setLanguage(lang)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                    language === lang
+                      ? 'bg-primary text-white'
+                      : 'text-gray-400 bg-surface hover:text-white'
+                  }`}
                 >
-                  {link.name}
-                </motion.a>
+                  {lang}
+                </button>
               ))}
-              <div className="w-full h-px bg-white/10 my-6"></div>
-              <div className="flex gap-4">
-                {languages.map((lang) => (
-                   <button
-                    key={lang.code}
-                    onClick={() => setLanguage(lang.code)}
-                    className={`text-sm font-bold px-4 py-2 rounded-lg border ${
-                      language === lang.code 
-                        ? 'border-accent text-accent bg-accent/10' 
-                        : 'border-white/10 text-slate-400'
-                    }`}
-                  >
-                    {lang.label}
-                  </button>
-                ))}
-              </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+          </div>
+        </motion.div>
+      )}
+    </motion.header>
   );
-};
-
-export default Header;
+}
