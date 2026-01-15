@@ -1,3 +1,4 @@
+import './index.css';
 import React from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -6,6 +7,8 @@ import Skills from './components/Skills';
 import Projects from './components/Projects';
 import AIChat from './components/AIChat';
 import Contact from './components/Contact';
+import './index.css';
+
 
 function App() {
   return (
